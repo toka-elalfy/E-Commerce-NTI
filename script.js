@@ -1,115 +1,180 @@
+let products = [
+    { name: "MacBook Pro Purple", price: 1999, image: "https://images.unsplash.com/photo-1517336714731-489689fd1ca8?auto=format&fit=crop&w=600&q=80" },
+    { name: "iPhone 15 Pro", price: 999, image: "https://images.unsplash.com/photo-1510557880182-3d4d3cba35a5?auto=format&fit=crop&w=600&q=80" },
+    { name: "Sony Headphones", price: 349, image: "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?auto=format&fit=crop&w=600&q=80" },
+    { name: "Smart Watch", price: 299, image: "https://images.unsplash.com/photo-1523275335684-37898b6baf30?auto=format&fit=crop&w=600&q=80" },
+    { name: "Mechanical Keyboard", price: 149, image: "https://images.unsplash.com/photo-1511467687858-23d96c32e4ae?auto=format&fit=crop&w=600&q=80" },
+    { name: "Professional Camera", price: 1200, image: "https://images.unsplash.com/photo-1516035069371-29a1b244cc32?auto=format&fit=crop&w=600&q=80" }
+];
+let cart = [];
+
 const loginForm = document.getElementById("login-form");
 const loginPage = document.getElementById("login-page");
 const app = document.getElementById("app");
 const logoutBtn = document.getElementById("logout-btn");
-
-loginForm.addEventListener("submit", function(e) {
-  e.preventDefault();
-  const email = document.getElementById("login-email").value;
-  const password = document.getElementById("login-password").value;
-
-  if (email && password) {
-    loginPage.style.display = "none";
-    app.style.display = "block";
-    Swal.fire("Success", "Logged in successfully!", "success");
-    renderProducts(); 
-  }
-});
-
-logoutBtn.addEventListener("click", function() {
-  app.style.display = "none";
-  loginPage.style.display = "block";
-});
-
-const links = document.querySelectorAll("[data-page]");
+const navLinks = document.querySelectorAll("[data-page]");
 const pages = document.querySelectorAll(".page");
-
-links.forEach(link => {
-  link.addEventListener("click", function() {
-    const target = this.getAttribute("data-page") + "-page";
-    pages.forEach(page => page.style.display = "none");
-    document.getElementById(target).style.display = "block";
-  });
-});
-
 const productsContainer = document.getElementById("products-container");
+const featuredContainer = document.getElementById("featured-products-container");
 const addProductForm = document.getElementById("add-product-form");
 const cartList = document.getElementById("cart-list");
-const cartTotal = document.getElementById("cart-total");
+const cartTotalDisplay = document.getElementById("cart-total");
+const cartCountBadge = document.getElementById("cart-count-badge");
+const checkoutBtn = document.getElementById("checkout-btn");
 
-let products = [
-  { name: "Laptop", price: 1200, image: "image/laptop.jpg" },
-  { name: "Smartphone", price: 800, image: "image/phone.jpg" },
-  { name: "Smartphone", price: 800, image: "image/phone3.jpg" },
-  { name: "Headphones", price: 150, image: "image/headphones.jpg" },
-  { name: "Smartwatch", price: 200, image: "image/smartwatch.jpg" },
-  { name: "Camera", price: 600, image: "image/camera.jpg" }
-];
+loginForm.addEventListener("submit", (e) => {
+    e.preventDefault();
+    loginPage.classList.add("d-none");
+    app.style.display = "flex";
+    app.style.flexDirection = "column";
+    
+    Swal.fire({
+        icon: 'success',
+        title: 'Welcome to Ele City!',
+        timer: 1500,
+        showConfirmButton: false,
+        background: '#f8f7ff',
+        color: '#3c096c'
+    });
+    
+    renderProducts();
+    renderFeatured();
+});
 
-let cart = [];
+logoutBtn.addEventListener("click", () => {
+    app.style.display = "none";
+    loginPage.classList.remove("d-none");
+});
 
-addProductForm.addEventListener("submit", function(e) {
-  e.preventDefault();
-  const name = document.getElementById("product-name").value;
-  const price = parseFloat(document.getElementById("product-price").value);
-  const image = document.getElementById("product-image").value;
+function navigateTo(pageId) {
+    pages.forEach(p => p.style.display = "none");
+    const targetPage = document.getElementById(`${pageId}-page`);
+    if (targetPage) targetPage.style.display = "block";
+    window.scrollTo(0,0);
+    
+    navLinks.forEach(l => {
+        l.classList.remove('active');
+        if(l.getAttribute('data-page') === pageId) l.classList.add('active');
+    });
+}
 
-  const product = { name, price, image };
-  products.push(product);
+navLinks.forEach(link => {
+    link.addEventListener("click", function(e) {
+        e.preventDefault();
+        navigateTo(this.getAttribute("data-page"));
+    });
+});
 
-  renderProducts();
-  Swal.fire("Success", "Product added!", "success");
-  addProductForm.reset();
+addProductForm.addEventListener("submit", (e) => {
+    e.preventDefault();
+    const name = document.getElementById("product-name").value;
+    const price = parseFloat(document.getElementById("product-price").value);
+    const image = document.getElementById("product-image").value;
+    
+    products.unshift({ name, price, image });
+    renderProducts();
+    
+    Swal.fire('Added!', 'New product is now live.', 'success');
+    addProductForm.reset();
+    navigateTo('products');
 });
 
 function renderProducts() {
-  productsContainer.innerHTML = "";
-  products.forEach((p, index) => {
-    const col = document.createElement("div");
-    col.className = "col-md-4";
-    col.innerHTML = `
-      <div class="card mb-4">
-        <img src="${p.image}" class="card-img-top" alt="${p.name}">
-        <div class="card-body">
-          <h5 class="card-title">${p.name}</h5>
-          <p class="card-text">$${p.price}</p>
-          <button class="btn add-to-cart" data-index="${index}">Add to Cart</button>
+    if(!productsContainer) return;
+    productsContainer.innerHTML = products.map((p, idx) => `
+        <div class="col-md-4 col-sm-6">
+            <div class="card product-card">
+                <img src="${p.image}" class="card-img-top" alt="${p.name}" onerror="this.src='https://via.placeholder.com/300x200?text=Item'">
+                <div class="card-body">
+                    <h5 class="fw-bold mb-1">${p.name}</h5>
+                    <p class="fw-bold mb-3" style="color: #9d4edd; font-size: 1.2rem;">$${p.price.toFixed(2)}</p>
+                    <button class="btn btn-primary-custom w-100" onclick="addToCart(${idx})">
+                        <i class="fas fa-cart-plus me-2"></i>Buy Now
+                    </button>
+                </div>
+            </div>
         </div>
-      </div>
-    `;
-    productsContainer.appendChild(col);
-  });
+    `).join('');
+}
 
-  document.querySelectorAll(".add-to-cart").forEach(btn => {
-    btn.addEventListener("click", function() {
-      const index = this.getAttribute("data-index");
-      cart.push(products[index]);
-      renderCart();
+function renderFeatured() {
+    if(!featuredContainer) return;
+    featuredContainer.innerHTML = products.slice(0, 3).map((p, idx) => `
+        <div class="col-md-4">
+            <div class="card product-card" style="border-bottom: 4px solid #9d4edd;">
+                <img src="${p.image}" class="card-img-top" alt="${p.name}">
+                <div class="card-body text-center">
+                    <h6 class="fw-bold mb-2">${p.name}</h6>
+                    <button class="btn btn-sm btn-primary-custom rounded-pill px-4" onclick="addToCart(${idx})">Quick Buy</button>
+                </div>
+            </div>
+        </div>
+    `).join('');
+}
+
+window.addToCart = (index) => {
+    cart.push(products[index]);
+    updateCartUI();
+    Swal.fire({
+        toast: true,
+        position: 'top-end',
+        icon: 'success',
+        title: 'Item added to bag',
+        showConfirmButton: false,
+        timer: 1000
     });
-  });
+};
+
+window.removeFromCart = (index) => {
+    cart.splice(index, 1);
+    updateCartUI();
+};
+
+function updateCartUI() {
+    cartCountBadge.innerText = cart.length;
+    const emptyMsg = document.getElementById("empty-cart-msg");
+    
+    if (cart.length === 0) {
+        cartList.innerHTML = "";
+        emptyMsg.style.display = "block";
+    } else {
+        emptyMsg.style.display = "none";
+        cartList.innerHTML = cart.map((item, idx) => `
+            <div class="card p-3 mb-2 shadow-sm border-0 d-flex flex-row justify-content-between align-items-center rounded-4">
+                <div class="d-flex align-items-center">
+                    <img src="${item.image}" width="60" height="60" class="rounded me-3" style="object-fit: cover;">
+                    <div>
+                        <h6 class="mb-0 fw-bold">${item.name}</h6>
+                        <small class="text-muted">$${item.price.toFixed(2)}</small>
+                    </div>
+                </div>
+                <button class="btn btn-link text-danger" onclick="removeFromCart(${idx})"><i class="fas fa-trash"></i></button>
+            </div>
+        `).join('');
+    }
+    
+    let total = cart.reduce((sum, item) => sum + item.price, 0);
+    cartTotalDisplay.innerText = total.toFixed(2);
 }
 
-function renderCart() {
-  cartList.innerHTML = "";
-  let total = 0;
+checkoutBtn.addEventListener("click", () => {
+    if(cart.length === 0) return;
+    Swal.fire({
+        title: 'Confirm Order',
+        text: 'Ready to receive your items?',
+        icon: 'question',
+        showCancelButton: true,
+        confirmButtonColor: '#3c096c'
+    }).then((result) => {
+        if(result.isConfirmed) {
+            Swal.fire('Success!', 'Your order is being processed.', 'success');
+            cart = [];
+            updateCartUI();
+            navigateTo('home');
+        }
+    });
+});
 
-  cart.forEach(item => {
-    const li = document.createElement("li");
-    li.className = "list-group-item d-flex align-items-center justify-content-between";
-
-    li.innerHTML = `
-      <div class="d-flex align-items-center">
-        <img src="${item.image}" alt="${item.name}" 
-             style="width:50px; height:50px; object-fit:cover; margin-right:10px; border-radius:5px;">
-        <div>
-          <strong>${item.name}</strong><br>
-          $${item.price}
-        </div>
-      </div>
-    `;
-    cartList.appendChild(li);
-    total += item.price;
-  });
-
-  cartTotal.textContent = total.toFixed(2);
-}
+window.onload = () => {
+    window.navigateTo = navigateTo;
+};
